@@ -95,6 +95,8 @@ public class S05_MyMeshRenderer : MonoBehaviour
                 // 힌트: (x / size) + (y / size) 의 결과를 활용해보세요.
                 bool isColorA = ((x / size) + (y / size)) % 2 == 0;
                 // 여기에 SetPixel 호출까지 직접 작성하세요.
+                Color checkerColor = isColorA ? colorA : colorB;
+                canvasTexture.SetPixel(x, y, checkerColor);
             }
         }
     }
