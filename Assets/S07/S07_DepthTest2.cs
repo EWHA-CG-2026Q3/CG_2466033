@@ -7,14 +7,14 @@ public class S07_DepthTest2 : MonoBehaviour
     [SerializeField] private int canvasWidth = 256;
     [SerializeField] private int canvasHeight = 256;
 
-    [SerializeField] private Vector3 vertexA1 = new Vector3(100, 180, 0.3f);
+    [SerializeField] private Vector3 vertexA1 = new Vector3(100, 180, 0.5f);
     [SerializeField] private Vector3 vertexB1 = new Vector3(60, 80, 0.3f);
-    [SerializeField] private Vector3 vertexC1 = new Vector3(180, 80, 0.3f);
+    [SerializeField] private Vector3 vertexC1 = new Vector3(180, 80, 0.5f);
     [SerializeField] private Color color1 = new Color(1f, 0.4f, 0.2f, 1f);
 
-    [SerializeField] private Vector3 vertexA2 = new Vector3(150, 200, 0.2f);
-    [SerializeField] private Vector3 vertexB2 = new Vector3(90, 60, 0.8f);
-    [SerializeField] private Vector3 vertexC2 = new Vector3(220, 60, 0.8f);
+    [SerializeField] private Vector3 vertexA2 = new Vector3(150, 200, 0.1f);
+    [SerializeField] private Vector3 vertexB2 = new Vector3(90, 60, 0.9f);
+    [SerializeField] private Vector3 vertexC2 = new Vector3(220, 60, 0.9f);
     [SerializeField] private Color color2 = new Color(0.2f, 0.5f, 1f, 1f);
 
     [SerializeField] private Vector3 vertexA3 = new Vector3(210, 220, 0.3f);
