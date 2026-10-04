@@ -10,7 +10,7 @@ public class S07_Clipping : MonoBehaviour
     [SerializeField] private int clipMargin = 40;  // 캔버스 안쪽으로 이만큼 들어온 지점이 클리핑 경계
     [SerializeField]
     private List<Vector2> polygon = new List<Vector2> {
-        new Vector2(10, 130), new Vector2(130, 250), new Vector2(246, 130)
+        new Vector2(10, 120), new Vector2(120, 300), new Vector2(200, 100)
     };
     [SerializeField] private Color fillColor = new Color(1f, 0.6f, 0.2f, 1f);
     [SerializeField] private Color marginOutlineColor = new Color(0.5f, 0.5f, 0.5f, 1f);
@@ -202,7 +202,6 @@ public class S07_Clipping : MonoBehaviour
     {
         // TODO
         float t = (boundaryY - p1.y) / (p2.y - p1.y);
-
         return new Vector2(p1.x + t * (p2.x - p1.x), boundaryY);
     }
 
