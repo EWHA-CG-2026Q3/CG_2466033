@@ -53,4 +53,29 @@ public class S09_Shear : MonoBehaviour
         return new Vector4(result[0], result[1], result[2], result[3]);
     }
 
+    Vector3[] ApplyShear(Vector3[] baseVertices, float k)
+    {
+        float[,] H = ShearMatrixRaw(k);
+
+        Vector3[] verts = new Vector3[baseVertices.Length];
+
+        for (int i = 0; i < baseVertices.Length; i++)
+        {
+            Vector4 h = ToHomogeneous(baseVertices[i]);
+            h = MultiplyMatrixVectorRaw(H, h);
+            verts[i] = FromHomogeneous(h);
+        }
+        return verts;
+    }
+
+    void OnValidate()
+    {
+        Vector3 topVertex = new Vector3(0.5f, 1f, 0.5f);
+
+        Vector4 h = ToHomogeneous(topVertex);
+        h = MultiplyMatrixVectorRaw(ShearMatrixRaw(k), h);
+
+        Debug.Log($"k = {k}, Top Vertex = ({h.x}, {h.y}, {h.z})");
+    }
+
 }
