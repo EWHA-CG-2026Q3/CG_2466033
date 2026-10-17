@@ -64,7 +64,29 @@ public class S11_VirtualCamera_Finish : MonoBehaviour
     {
         Matrix4x4 Tinv = Matrix4x4.Translate(-cam.position);                  // T⁻¹: 이동을 되돌림
         Matrix4x4 Rinv = Matrix4x4.Rotate(Quaternion.Inverse(cam.rotation));  // R⁻¹: 회전을 되돌림
-        return Rinv * Tinv;                                                   // V = R⁻¹ × T⁻¹
+        // return Rinv * Tinv;                                                   // V = R⁻¹ × T⁻¹
+        return MultiplyMatrixMatrix(Rinv, Tinv);
+    }
+
+    Matrix4x4 MultiplyMatrixMatrix(Matrix4x4 A, Matrix4x4 B)
+    {
+        Matrix4x4 result = Matrix4x4.zero;
+
+        for (int col = 0; col < 4; col++)
+        {
+            Vector4 b = B.GetColumn(col);
+
+            Vector4 r = new Vector4(
+                A[0, 0] * b.x + A[0, 1] * b.y + A[0, 2] * b.z + A[0, 3] * b.w,
+                A[1, 0] * b.x + A[1, 1] * b.y + A[1, 2] * b.z + A[1, 3] * b.w,
+                A[2, 0] * b.x + A[2, 1] * b.y + A[2, 2] * b.z + A[2, 3] * b.w,
+                A[3, 0] * b.x + A[3, 1] * b.y + A[3, 2] * b.z + A[3, 3] * b.w
+            );
+
+            result.SetColumn(col, r);
+        }
+
+        return result;
     }
 
     // 카메라(VirtualCamera)가 본 장면을 캔버스에 와이어프레임으로 그림 (매 프레임 호출)
