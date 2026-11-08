@@ -2,7 +2,7 @@ using UnityEngine;
 
 [ExecuteAlways]
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-public class Mid_JungleMesh : MonoBehaviour
+public class Mid_BambooMesh : MonoBehaviour
 {
     public float height = 6f;
     public float radius = 0.18f;
