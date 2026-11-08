@@ -7,38 +7,46 @@ public class Mid_PlantScatter : MonoBehaviour
     public Transform ground;
 
     [Header("Plant Originals")]
-    public GameObject bamboo;
-    public GameObject banana;
-    public GameObject alocasia;
-    public GameObject monstera;
-    public GameObject palm;
-    public GameObject fern;
+    public GameObject bamboo, banana, alocasia, monstera, palm, fern;
 
     [Header("Plant Counts")]
-    public int bambooCount = 35;
-    public int bananaCount = 18;
-    public int alocasiaCount = 30;
-    public int monsteraCount = 25;
-    public int palmCount = 12;
-    public int fernCount = 70;
+    public int bambooCount = 100;
+    public int bananaCount = 45;
+    public int alocasiaCount = 100;
+    public int monsteraCount = 85;
+    public int palmCount = 28;
+    public int fernCount = 230;
 
     [Header("Placement")]
-    [Range(0f, 0.45f)]
-    public float edgeMargin = 0.08f;
+    public float edgeMargin = 0.03f;
     public int randomSeed = 1234;
+    public float clusterChance = 0.65f;
+    public float clusterRadius = 2.4f;
 
-    [Header("Exclusion Areas")]
+    [Header("Pavilion")]
+    public Transform pavilion;
+    public float pavilionHalfWidth = 2.5f;
+    public float pavilionHalfDepth = 2.5f;
+    public float pavilionClearance = 0.35f;
+    public float entranceWidth = 2.6f;
+    public float entranceLength = 5f;
+
+    [Header("Railway")]
+    public Transform railway;
+    public float railwayHalfWidth = 1.7f;
+
+    [Header("Extra Exclusions")]
     public Transform[] exclusionCenters;
     public float[] exclusionRadii;
+
+    [Header("Entrance Path")]
+    public Transform entranceStart;
+    public float pathWidth = 5f;
 
     [ContextMenu("Scatter Plants")]
     public void ScatterPlants()
     {
-        if (ground == null)
-        {
-            Debug.LogWarning("Ground를 지정해 주세요.");
-            return;
-        }
+        if (ground == null) return;
 
         ClearPlants();
 
@@ -46,368 +54,214 @@ public class Mid_PlantScatter : MonoBehaviour
         root.transform.SetParent(transform, false);
 
         System.Random rng = new System.Random(randomSeed);
-        List<Vector3> treePositions = new List<Vector3>();
+        List<Vector3> trees = new List<Vector3>();
 
-        ScatterSpaced(
-            palm, palmCount, 0.85f, 1.25f,
-            5.5f, root.transform, treePositions, rng
-        );
+        Scatter(palm, palmCount, 0.85f, 1.25f, 2.4f, null, trees, root.transform, rng);
+        Scatter(banana, bananaCount, 0.8f, 1.3f, 1.3f, trees, trees, root.transform, rng);
+        Scatter(bamboo, bambooCount, 0.7f, 1.3f, 0.8f, trees, null, root.transform, rng);
+        Scatter(alocasia, alocasiaCount, 0.7f, 1.2f, 0.2f, trees, null, root.transform, rng);
+        Scatter(monstera, monsteraCount, 0.7f, 1.2f, 0.2f, trees, null, root.transform, rng);
+        Scatter(fern, fernCount, 0.6f, 1.1f, 0.1f, trees, null, root.transform, rng);
 
-        ScatterCluster(
-            banana, bananaCount, 0.8f, 1.3f,
-            3, 3.5f, root.transform, treePositions, rng
-        );
-
-        ScatterCluster(
-            bamboo, bambooCount, 0.7f, 1.3f,
-            6, 3.0f, root.transform, null, rng
-        );
-
-        ScatterNearTrees(
-            alocasia, alocasiaCount, 0.7f, 1.2f,
-            treePositions, 1.8f, 6.0f, root.transform, rng
-        );
-
-        ScatterNearTrees(
-            monstera, monsteraCount, 0.7f, 1.2f,
-            treePositions, 2.0f, 7.0f, root.transform, rng
-        );
-
-        ScatterCluster(
-            fern, fernCount, 0.6f, 1.1f,
-            10, 4.0f, root.transform, null, rng
-        );
-
-        Debug.Log("군집형 식물 배치 완료!");
+        Debug.Log("Generated " + root.transform.childCount + " plants");
     }
 
-    Vector3 RandomGroundPoint(System.Random rng)
+    void Scatter(GameObject original, int count, float minScale, float maxScale,
+        float minDistance, List<Vector3> anchors, List<Vector3> saved,
+        Transform parent, System.Random rng)
     {
-        float limit = 5f * (1f - edgeMargin * 2f);
+        if (original == null) return;
 
-        float x = RandomRange(rng, -limit, limit);
-        float z = RandomRange(rng, -limit, limit);
-
-        return ground.TransformPoint(new Vector3(x, 0f, z));
-    }
-
-    bool IsInsideGround(Vector3 worldPoint)
-    {
-        Vector3 local = ground.InverseTransformPoint(worldPoint);
-        float limit = 5f * (1f - edgeMargin * 2f);
-
-        return Mathf.Abs(local.x) <= limit &&
-               Mathf.Abs(local.z) <= limit;
-    }
-
-    float RandomRange(System.Random rng, float min, float max)
-    {
-        return min + (float)rng.NextDouble() * (max - min);
-    }
-
-    bool TryRandomPoint(System.Random rng, out Vector3 point)
-    {
-        for (int attempt = 0; attempt < 100; attempt++)
-        {
-            point = RandomGroundPoint(rng);
-
-            if (!IsExcluded(point))
-                return true;
-        }
-
-        point = Vector3.zero;
-        return false;
-    }
-
-    void SpawnPlant(
-        GameObject original,
-        Vector3 position,
-        float minScale,
-        float maxScale,
-        Transform parent,
-        System.Random rng)
-    {
-        GameObject plant = Instantiate(original);
-
-        plant.name = original.name + "_Auto";
-        plant.transform.SetParent(parent, true);
-        plant.transform.position = position;
-
-        plant.transform.rotation = Quaternion.Euler(
-            0f,
-            RandomRange(rng, 0f, 360f),
-            0f
-        );
-
-        float scale = RandomRange(rng, minScale, maxScale);
-
-        plant.transform.localScale =
-            original.transform.localScale * scale;
-
-        plant.SetActive(true);
-    }
-
-    void ScatterSpaced(
-        GameObject original,
-        int count,
-        float minScale,
-        float maxScale,
-        float minDistance,
-        Transform parent,
-        List<Vector3> positions,
-        System.Random rng)
-    {
-        if (original == null || count <= 0)
-            return;
+        List<Vector3> placed = new List<Vector3>();
 
         for (int i = 0; i < count; i++)
         {
-            bool found = false;
-            Vector3 point = Vector3.zero;
-
-            for (int attempt = 0; attempt < 150; attempt++)
+            for (int attempt = 0; attempt < 250; attempt++)
             {
-                if (!TryRandomPoint(rng, out point))
-                    break;
+                Vector3 point = RandomPoint(rng);
 
-                bool tooClose = false;
-
-                foreach (Vector3 other in positions)
+                if (anchors != null && anchors.Count > 0 &&
+                    rng.NextDouble() < clusterChance)
                 {
-                    float distance = Vector2.Distance(
-                        new Vector2(point.x, point.z),
-                        new Vector2(other.x, other.z)
-                    );
-
-                    if (distance < minDistance)
-                    {
-                        tooClose = true;
-                        break;
-                    }
-                }
-
-                if (!tooClose)
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-                continue;
-
-            SpawnPlant(
-                original, point, minScale, maxScale,
-                parent, rng
-            );
-
-            positions.Add(point);
-        }
-    }
-
-    void ScatterCluster(
-        GameObject original,
-        int count,
-        float minScale,
-        float maxScale,
-        int plantsPerCluster,
-        float clusterRadius,
-        Transform parent,
-        List<Vector3> savedPositions,
-        System.Random rng)
-    {
-        if (original == null || count <= 0)
-            return;
-
-        int placed = 0;
-        int clusters = Mathf.CeilToInt(
-            count / (float)plantsPerCluster
-        );
-
-        for (int c = 0; c < clusters; c++)
-        {
-            int gridSize = Mathf.CeilToInt(Mathf.Sqrt(clusters));
-
-            int cellX = c % gridSize;
-            int cellZ = c / gridSize;
-
-            float limit = 5f * (1f - edgeMargin * 2f);
-            float cellSize = (limit * 2f) / gridSize;
-
-            Vector3 center = Vector3.zero;
-            bool foundCenter = false;
-
-            for (int attempt = 0; attempt < 100; attempt++)
-            {
-                float x = -limit + (cellX + RandomRange(rng, 0.15f, 0.85f)) * cellSize;
-                float z = -limit + (cellZ + RandomRange(rng, 0.15f, 0.85f)) * cellSize;
-
-                center = ground.TransformPoint(new Vector3(x, 0f, z));
-
-                if (!IsExcluded(center))
-                {
-                    foundCenter = true;
-                    break;
-                }
-            }
-
-            if (!foundCenter)
-                continue;
-
-            int target = Mathf.Min(
-                plantsPerCluster,
-                count - placed
-            );
-
-            for (int i = 0; i < target; i++)
-            {
-                bool found = false;
-                Vector3 point = center;
-
-                for (int attempt = 0; attempt < 80; attempt++)
-                {
-                    float angle = RandomRange(
-                        rng, 0f, Mathf.PI * 2f
-                    );
-
+                    Vector3 center = anchors[rng.Next(anchors.Count)];
+                    float angle = Range(rng, 0f, Mathf.PI * 2f);
                     float radius = clusterRadius *
-                        Mathf.Sqrt(RandomRange(rng, 0f, 1f));
+                        Mathf.Sqrt(Range(rng, 0f, 1f));
 
                     point = center + new Vector3(
                         Mathf.Cos(angle) * radius,
                         0f,
                         Mathf.Sin(angle) * radius
                     );
+                }
 
-                    if (IsInsideGround(point) &&
-                        !IsExcluded(point))
+                if (!InsideGround(point) || Excluded(point)) continue;
+
+                bool tooClose = false;
+
+                foreach (Vector3 other in placed)
+                {
+                    Vector2 a = new Vector2(point.x, point.z);
+                    Vector2 b = new Vector2(other.x, other.z);
+
+                    if (Vector2.Distance(a, b) < minDistance)
                     {
-                        found = true;
+                        tooClose = true;
                         break;
                     }
                 }
 
-                if (!found)
-                    continue;
+                if (tooClose) continue;
 
-                SpawnPlant(
-                    original, point, minScale, maxScale,
-                    parent, rng
+                GameObject plant = Instantiate(original);
+                plant.name = original.name + "_Auto";
+                plant.transform.SetParent(parent, true);
+                plant.transform.position = point;
+                plant.transform.rotation = Quaternion.Euler(
+                    0f, Range(rng, 0f, 360f), 0f
                 );
+                plant.transform.localScale =
+                    original.transform.localScale *
+                    Range(rng, minScale, maxScale);
 
-                if (savedPositions != null)
-                    savedPositions.Add(point);
+                plant.SetActive(true);
 
-                placed++;
+                placed.Add(point);
+                if (saved != null) saved.Add(point);
+                break;
             }
         }
     }
 
-    void ScatterNearTrees(
-        GameObject original,
-        int count,
-        float minScale,
-        float maxScale,
-        List<Vector3> treePositions,
-        float minRadius,
-        float maxRadius,
-        Transform parent,
-        System.Random rng)
+    Vector3 RandomPoint(System.Random rng)
     {
-        if (original == null || count <= 0)
-            return;
+        float limit = 5f * (1f - edgeMargin * 2f);
 
-        if (treePositions.Count == 0)
-        {
-            ScatterCluster(
-                original, count, minScale, maxScale,
-                5, 2f, parent, null, rng
-            );
-            return;
-        }
-
-        for (int i = 0; i < count; i++)
-        {
-            bool found = false;
-            Vector3 point = Vector3.zero;
-
-            for (int attempt = 0; attempt < 100; attempt++)
-            {
-                Vector3 tree = treePositions[
-                    rng.Next(treePositions.Count)
-                ];
-
-                float angle = RandomRange(
-                    rng, 0f, Mathf.PI * 2f
-                );
-
-                float radius = RandomRange(
-                    rng, minRadius, maxRadius
-                );
-
-                point = tree + new Vector3(
-                    Mathf.Cos(angle) * radius,
-                    0f,
-                    Mathf.Sin(angle) * radius
-                );
-
-                if (IsInsideGround(point) &&
-                    !IsExcluded(point))
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-                continue;
-
-            SpawnPlant(
-                original, point, minScale, maxScale,
-                parent, rng
-            );
-        }
+        return ground.TransformPoint(new Vector3(
+            Range(rng, -limit, limit),
+            0f,
+            Range(rng, -limit, limit)
+        ));
     }
 
-    bool IsExcluded(Vector3 position)
+    bool InsideGround(Vector3 point)
     {
-        if (exclusionCenters == null ||
-            exclusionRadii == null)
-            return false;
+        Vector3 p = ground.InverseTransformPoint(point);
+        float limit = 5f * (1f - edgeMargin * 2f);
 
-        int count = Mathf.Min(
-            exclusionCenters.Length,
-            exclusionRadii.Length
-        );
+        return Mathf.Abs(p.x) <= limit &&
+               Mathf.Abs(p.z) <= limit;
+    }
 
-        for (int i = 0; i < count; i++)
+    bool Excluded(Vector3 position)
+    {
+        if (entranceStart != null)
         {
-            if (exclusionCenters[i] == null)
-                continue;
+            Vector3 p = position - entranceStart.position;
 
-            Vector3 center = exclusionCenters[i].position;
+            if (Mathf.Abs(p.x) < pathWidth * 0.5f && p.z < 0f)
+                return true;
+        }
+        if (pavilion != null)
+        {
+            Vector3 center = pavilion.position;
 
             float dx = position.x - center.x;
             float dz = position.z - center.z;
 
-            float distance = Mathf.Sqrt(
-                dx * dx + dz * dz
+            float halfWidth = pavilionHalfWidth + pavilionClearance;
+            float halfDepth = pavilionHalfDepth + pavilionClearance;
+
+            if (Mathf.Abs(dx) < halfWidth &&
+                Mathf.Abs(dz) < halfDepth)
+                return true;
+
+            if (railway != null)
+            {
+                Vector3 railCenter = railway.position;
+
+                float left = Mathf.Min(
+                    center.x + halfWidth,
+                    railCenter.x
+                );
+
+                float right = Mathf.Max(
+                    center.x + halfWidth,
+                    railCenter.x
+                );
+
+                if (position.x >= left &&
+                    position.x <= right &&
+                    Mathf.Abs(dz) < halfDepth)
+                    return true;
+            }
+        }
+
+        if (railway != null)
+        {
+            Mid_Railway rail = railway.GetComponent<Mid_Railway>();
+
+            if (rail != null)
+            {
+                Vector3 p = railway.InverseTransformPoint(position);
+
+                float halfLength = rail.length * 0.5f;
+
+                if (Mathf.Abs(p.z) <= halfLength)
+                {
+                    float t = Mathf.InverseLerp(
+                        -halfLength, halfLength, p.z
+                    );
+
+                    float u = Mathf.Clamp01(
+                        Mathf.InverseLerp(
+                            rail.curveStart, rail.curveEnd, t
+                        )
+                    );
+
+                    float centerX = rail.curveAmount *
+                        u * u * (3f - 2f * u);
+
+                    if (Mathf.Abs(p.x - centerX) <
+                        railwayHalfWidth + 0.8f)
+                        return true;
+                }
+            }
+        }
+
+        if (exclusionCenters != null && exclusionRadii != null)
+        {
+            int count = Mathf.Min(
+                exclusionCenters.Length, exclusionRadii.Length
             );
 
-            if (distance < exclusionRadii[i])
-                return true;
+            for (int i = 0; i < count; i++)
+            {
+                if (exclusionCenters[i] == null) continue;
+
+                Vector3 c = exclusionCenters[i].position;
+
+                if (Vector2.Distance(
+                    new Vector2(position.x, position.z),
+                    new Vector2(c.x, c.z)
+                ) < exclusionRadii[i])
+                    return true;
+            }
         }
 
         return false;
+    }
+
+    float Range(System.Random rng, float min, float max)
+    {
+        return min + (float)rng.NextDouble() * (max - min);
     }
 
     [ContextMenu("Clear Generated Plants")]
     public void ClearPlants()
     {
         Transform old = transform.Find("GeneratedPlants");
-
-        if (old == null)
-            return;
+        if (old == null) return;
 
         old.gameObject.SetActive(false);
 
